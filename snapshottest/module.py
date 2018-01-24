@@ -1,12 +1,8 @@
 import os
-import imp
-from collections import defaultdict
 import logging
+import json
 
 from .snapshot import Snapshot
-from .formatter import Formatter
-from .diff import PrettyDiff
-# from .error import SnapshotError
 
 
 logger = logging.getLogger(__name__)
@@ -20,17 +16,14 @@ class SnapshotModule(object):
         self._snapshots = None
         self.module = module
         self.filepath = filepath
-        self.imports = defaultdict(set)
         self.visited_snapshots = set()
         self.new_snapshots = set()
         self.failed_snapshots = set()
-        self.imports['snapshottest'].add('Snapshot')
 
     def load_snapshots(self):
         try:
-            source = imp.load_source(self.module, self.filepath)
-            assert isinstance(source.snapshots, Snapshot)
-            return source.snapshots
+            with open(self.filepath) as f:
+                return Snapshot(json.load(f))
         except BaseException:
             return Snapshot()
 
@@ -134,31 +127,8 @@ class SnapshotModule(object):
         except (IOError, OSError):
             pass
 
-        # Create __init__.py in case doesn't exist
-        open(os.path.join(snapshot_dir, '__init__.py'), 'a').close()
-
-        pretty = Formatter(self.imports)
-
         with open(self.filepath, 'w') as snapshot_file:
-            snapshots_declarations = []
-            for key, value in self.snapshots.items():
-                snapshots_declarations.append('''snapshots['{}'] = {}'''.format(key, pretty(value)))
-
-            imports = '\n'.join([
-                'from {} import {}'.format(module, ', '.join(module_imports))
-                for module, module_imports in self.imports.items()
-            ])
-            snapshot_file.write('''# -*- coding: utf-8 -*-
-# snapshottest: v1 - https://goo.gl/zC4yUc
-from __future__ import unicode_literals
-
-{}
-
-
-snapshots = Snapshot()
-
-{}
-'''.format(imports, '\n\n'.join(snapshots_declarations)))
+            json.dump(self.snapshots, snapshot_file, indent=2)
 
     @classmethod
     def get_module_for_testpath(cls, test_filepath):
@@ -166,7 +136,7 @@ snapshots = Snapshot()
             dirname = os.path.dirname(test_filepath)
             snapshot_dir = os.path.join(dirname, "snapshots")
 
-            snapshot_basename = 'snap_{}.py'.format(os.path.splitext(os.path.basename(test_filepath))[0])
+            snapshot_basename = 'snap_{}.json'.format(os.path.splitext(os.path.basename(test_filepath))[0])
             snapshot_filename = os.path.join(snapshot_dir, snapshot_basename)
             snapshot_module = '{}'.format(os.path.splitext(snapshot_basename)[0])
 
@@ -216,15 +186,13 @@ class SnapshotTest(object):
         assert value == snapshot
 
     def assert_match(self, value, name=''):
+        value = self.prepare_value(value)
         self.curr_snapshot = name or self.snapshot_counter
         self.visit()
         prev_snapshot = not self.update and self.module[self.test_name]
         if prev_snapshot:
             try:
-                self.assert_equals(
-                    PrettyDiff(value, self),
-                    PrettyDiff(prev_snapshot, self)
-                )
+                self.assert_equals(value, prev_snapshot)
             except BaseException:
                 self.fail()
                 raise
@@ -235,6 +203,13 @@ class SnapshotTest(object):
 
     def save_changes(self):
         self.module.save()
+
+    def prepare_value(self, value):
+        try:
+            json.dumps(value)
+            return value
+        except TypeError:
+            return repr(value)
 
 
 def assert_match_snapshot(value, name=''):
