@@ -12,12 +12,6 @@ script:
 - py.test --cov=snapshottest tests examples/pytest
 # Run Pytest Example
 - py.test examples/pytest
-# Run Unittest Example
-- python examples/unittest/test_demo.py
-# Run nose
-- nosetests examples/unittest
-# Run django. since the test is dynamic it should fail without the update flag
-- cd examples/django_project && python manage.py test --snapshot-update
 after_success:
 - coveralls
 matrix:

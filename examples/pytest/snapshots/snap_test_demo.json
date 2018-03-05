@@ -1,0 +1,5 @@
+{
+  "test_me_endpoint 1": {
+    "url": "/me"
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "TestPyTestSnapShotTest.test_property_test_name 1": "counter",
+  "TestPyTestSnapShotTest.test_property_test_name named_test": "named",
+  "TestPyTestSnapShotTest.test_property_test_name 2": "counter",
+  "test_pytest_snapshottest_property_test_name 1": "counter",
+  "test_pytest_snapshottest_property_test_name named_test": "named",
+  "test_pytest_snapshottest_property_test_name 2": "counter"
+}

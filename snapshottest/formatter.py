@@ -1,7 +1,6 @@
 import six
 
 from .sorted_dict import SortedDict
-from .generic_repr import GenericRepr
 
 
 def trepr(s):
@@ -43,7 +42,7 @@ class Formatter(object):
             return self.format_list(value, indent)
         elif isinstance(value, six.string_types):
             return self.format_str(value, indent)
-        elif isinstance(value, (int, float, complex, bool, bytes, set, frozenset, GenericRepr)):
+        elif isinstance(value, (int, float, complex, bool, bytes, set, frozenset)):
             return self.format_std_type(value, indent)
 
         return self.format_object(value, indent)
@@ -59,9 +58,7 @@ class Formatter(object):
         return repr(value)
 
     def format_object(self, value, indent):
-        if self.imports:
-            self.imports['snapshottest'].add('GenericRepr')
-        return repr(GenericRepr(value))
+        return repr(value)
 
     def format_dict(self, value, indent):
         value = SortedDict(**value)
